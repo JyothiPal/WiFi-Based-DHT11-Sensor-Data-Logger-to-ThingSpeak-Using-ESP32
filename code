@@ -1,0 +1,63 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <DHT.h>
+#define DHTTYPE DHT11
+#define DHTPIN 2
+DHT dht(DHTPIN,DHTTYPE);
+// Replace with your network credentials
+const char* ssid = "Realme 11";
+const char* password = "Theju123";
+
+// ThingSpeak settings
+const char* server = "http://api.thingspeak.com/update";
+String apiKey = "IE116KJYGR2ATQ5F";  // Replace with your ThingSpeak Write API Key
+
+void setup() {
+  Serial.begin(115200);
+  dht.begin();
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting to WiFi");
+  
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+ 
+  Serial.println("\nConnected!");
+  pinMode(DHTPIN,INPUT);
+}
+
+void loop() {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    float h= dht.readHumidity();
+    float t= dht.readTemperature();
+    float f= dht.readTemperature(true);
+    Serial.println("humidity: ");
+    Serial.print(h);
+    Serial.println("Temperature: ");
+    Serial.print(t);
+    Serial.println("Temperature in F:");
+    Serial.print(f);
+    String url = server;
+    url += "?api_key=" + apiKey;
+    url += "&field1=" + String(h)+"&field2=" + String(t)+"&field3=" + String(f);  // Assuming you're using Field 1
+   
+    http.begin(url);
+    int httpResponseCode = http.GET();
+
+    if (httpResponseCode > 0) {
+      Serial.print("Data sent. Response code: ");
+      Serial.println(httpResponseCode);
+    } else {
+      Serial.print("Error in sending: ");
+      Serial.println(httpResponseCode);
+    }
+   
+    http.end();
+  } else {
+    Serial.println("WiFi Disconnected");
+  }
+
+  delay(1500);
+}
